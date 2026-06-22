@@ -31,7 +31,9 @@ npm test
 
 ## Matching Rule
 
-A note is "untriaged" only if **both** are true: its path is under the configured `inboxFolder`, and its frontmatter `tags` includes the configured `inboxTag`. Defaults (`inbox` / `inbox`) are meant to match `server/`'s `VAULT_INBOX_SUBDIR` default and the `tags: [inbox]` frontmatter it writes — keep these in sync manually if either default changes.
+A note is "untriaged" only if **both** are true: its path is under the configured `inboxFolder`, and its tags include the configured `inboxTag` — checked against both frontmatter `tags` and inline `#tag`s in the note body (merged via Obsidian's `getAllTags()` in `view.ts`, then compared in `scanner.ts` with the `#` stripped). Defaults (`inbox` / `inbox`) are meant to match `server/`'s `VAULT_INBOX_SUBDIR` default and the `tags: [inbox]` frontmatter it writes — keep these in sync manually if either default changes.
+
+`saveNote` (`actions.ts`) strips the inbox tag from both frontmatter `tags` and a standalone inline `#tag` in the body (via `stripInlineTag`, a word-boundary regex — it has no awareness of code fences, so a literal `#tag` inside a code block would also be stripped). This matters even under default settings, not just when `inboxFolder` is empty: without it, a note saved via an inline tag would keep matching `scanInboxNotes` on every subsequent scan until the tag is removed by hand.
 
 ## Out of Scope
 

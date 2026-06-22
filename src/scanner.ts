@@ -11,14 +11,17 @@ export interface InboxNote {
   createdAt: string | null;
 }
 
+// Strips a leading "#" so frontmatter tags ("inbox") and inline body tags
+// ("#inbox", as returned by Obsidian's getAllTags()) compare equal.
 function normalizeTags(tags: unknown): string[] {
-  if (Array.isArray(tags)) return tags.map((tag) => String(tag));
-  if (typeof tags === "string") return tags.split(",").map((tag) => tag.trim());
+  if (Array.isArray(tags)) return tags.map((tag) => String(tag).replace(/^#/, ""));
+  if (typeof tags === "string") return tags.split(",").map((tag) => tag.trim().replace(/^#/, ""));
   return [];
 }
 
 function isInFolder(path: string, folder: string): boolean {
-  const normalized = folder.replace(/\/+$/, "");
+  const normalized = folder.trim().replace(/\/+$/, "");
+  if (!normalized) return true;
   return path.startsWith(`${normalized}/`);
 }
 
@@ -28,6 +31,7 @@ export function scanInboxNotes(
   inboxFolder: string,
   inboxTag: string
 ): InboxNote[] {
+  const requireTag = inboxTag.trim().length > 0;
   const notes: InboxNote[] = [];
 
   for (const file of files) {
@@ -37,12 +41,16 @@ export function scanInboxNotes(
     try {
       frontmatter = getFrontmatter(file);
     } catch {
-      continue;
+      if (requireTag) continue;
+      frontmatter = undefined;
     }
-    if (!frontmatter) continue;
-    if (!normalizeTags(frontmatter.tags).includes(inboxTag)) continue;
 
-    const createdAt = typeof frontmatter.created === "string" ? frontmatter.created : null;
+    if (requireTag) {
+      if (!frontmatter) continue;
+      if (!normalizeTags(frontmatter.tags).includes(inboxTag)) continue;
+    }
+
+    const createdAt = typeof frontmatter?.created === "string" ? frontmatter.created : null;
     notes.push({ file, createdAt });
   }
 

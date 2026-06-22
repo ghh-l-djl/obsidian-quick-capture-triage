@@ -1,4 +1,4 @@
-import { ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
+import { getAllTags, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import type ObsidianInboxPlugin from "./main";
 import { scanInboxNotes, type InboxNote } from "./scanner";
 import { saveNote, discardNote, type FileManagerLike, type VaultLike } from "./actions";
@@ -46,11 +46,17 @@ export class InboxTriageView extends ItemView {
     this.refreshTimer = window.setTimeout(() => this.rescan(), 200);
   }
 
-  private rescan(): void {
+  rescan(): void {
     const { inboxFolder, inboxTag } = this.plugin.settings;
     this.notes = scanInboxNotes(
       this.app.vault.getMarkdownFiles(),
-      (file) => this.app.metadataCache.getFileCache(file)?.frontmatter,
+      (file) => {
+        const cache = this.app.metadataCache.getFileCache(file);
+        if (!cache) return undefined;
+        // getAllTags merges frontmatter tags with inline "#tag" tags found in the
+        // note body, so the inbox tag can be matched from either source.
+        return { tags: getAllTags(cache) ?? [], created: cache.frontmatter?.created };
+      },
       inboxFolder,
       inboxTag
     );
@@ -74,10 +80,6 @@ export class InboxTriageView extends ItemView {
       titleEl.addEventListener("click", () => {
         this.app.workspace.getLeaf(false).openFile(note.file);
       });
-
-      if (note.createdAt) {
-        row.createEl("span", { text: note.createdAt, cls: "obsidian-inbox-triage-date" });
-      }
 
       const buttons = row.createDiv({ cls: "obsidian-inbox-triage-buttons" });
       const saveBtn = buttons.createEl("button", { text: "保存" });
@@ -104,6 +106,8 @@ export class InboxTriageView extends ItemView {
       getAbstractFileByPath: (path) => app.vault.getAbstractFileByPath(path),
       createFolder: (path) => app.vault.createFolder(path),
       trash: (file, system) => app.vault.trash(file as unknown as TFile, system),
+      read: (file) => app.vault.read(file as unknown as TFile),
+      modify: (file, content) => app.vault.modify(file as unknown as TFile, content),
     };
   }
 

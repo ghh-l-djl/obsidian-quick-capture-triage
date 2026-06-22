@@ -57,4 +57,42 @@ describe("scanInboxNotes", () => {
     const result = scanInboxNotes([file], () => ({ tags: "inbox, other" }), "inbox", "inbox");
     expect(result).toHaveLength(1);
   });
+
+  it("matches a tag with a leading # the same as without, for inline body tags", () => {
+    const file = makeFile("inbox/a.md", 1);
+    const result = scanInboxNotes([file], () => ({ tags: ["#inbox"] }), "inbox", "inbox");
+    expect(result).toHaveLength(1);
+  });
+
+  it("treats an empty inbox folder as the whole vault", () => {
+    const file = makeFile("notes/deep/a.md", 1);
+    const result = scanInboxNotes([file], () => ({ tags: ["inbox"] }), "", "inbox");
+    expect(result).toHaveLength(1);
+  });
+
+  it("treats an empty inbox tag as requiring no tag at all", () => {
+    const tagged = makeFile("inbox/a.md", 1);
+    const untagged = makeFile("inbox/b.md", 2);
+    const result = scanInboxNotes(
+      [tagged, untagged],
+      (file) => (file === tagged ? { tags: ["other"] } : undefined),
+      "inbox",
+      ""
+    );
+    expect(result).toHaveLength(2);
+  });
+
+  it("does not skip a file when the frontmatter lookup throws and no tag is required", () => {
+    const file = makeFile("inbox/a.md", 1);
+    const result = scanInboxNotes(
+      [file],
+      () => {
+        throw new Error("cache miss");
+      },
+      "inbox",
+      ""
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0].createdAt).toBeNull();
+  });
 });

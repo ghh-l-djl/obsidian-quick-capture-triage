@@ -1,6 +1,6 @@
 {
-  "id": "obsidian-inbox-triage",
-  "name": "Obsidian Inbox Triage",
+  "id": "quick-capture-triage",
+  "name": "Quick Capture Triage",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "Clear out notes captured by the obsidian-inbox self-hosted pipeline: keep or discard each pending inbox note.",

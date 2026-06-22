@@ -30,6 +30,11 @@ export default class ObsidianInboxPlugin extends Plugin {
 
   async saveSettings(): Promise<void> {
     await this.saveData(this.settings);
+    for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_INBOX)) {
+      if (leaf.view instanceof InboxTriageView) {
+        leaf.view.rescan();
+      }
+    }
   }
 
   private async activateView(): Promise<void> {
