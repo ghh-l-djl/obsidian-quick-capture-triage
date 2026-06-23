@@ -11,7 +11,7 @@ export default class ObsidianInboxPlugin extends Plugin {
     this.registerView(VIEW_TYPE_INBOX, (leaf) => new InboxTriageView(leaf, this));
 
     this.addRibbonIcon("inbox", "收件箱整理", () => {
-      this.activateView();
+      void this.activateView();
     });
 
     this.addCommand({
@@ -44,6 +44,6 @@ export default class ObsidianInboxPlugin extends Plugin {
       leaf = workspace.getRightLeaf(false) ?? workspace.getLeaf(true);
       await leaf.setViewState({ type: VIEW_TYPE_INBOX, active: true });
     }
-    workspace.revealLeaf(leaf);
+    await workspace.revealLeaf(leaf);
   }
 }

@@ -11,7 +11,7 @@ export interface FileManagerLike {
 export interface VaultLike {
   getAbstractFileByPath(path: string): unknown;
   createFolder(path: string): Promise<unknown>;
-  trash(file: ActionFile, system: boolean): Promise<void>;
+  trash(file: ActionFile): Promise<void>;
   read(file: ActionFile): Promise<string>;
   modify(file: ActionFile, content: string): Promise<void>;
 }
@@ -62,5 +62,5 @@ export async function saveNote(
 }
 
 export async function discardNote(file: ActionFile, vault: VaultLike): Promise<void> {
-  await vault.trash(file, true);
+  await vault.trash(file);
 }

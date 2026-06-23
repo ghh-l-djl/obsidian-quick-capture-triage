@@ -1,7 +1,7 @@
 import { getAllTags, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import type ObsidianInboxPlugin from "./main";
 import { scanInboxNotes, type InboxNote } from "./scanner";
-import { saveNote, discardNote, type FileManagerLike, type VaultLike } from "./actions";
+import { saveNote, discardNote, type ActionFile, type FileManagerLike, type VaultLike } from "./actions";
 
 export const VIEW_TYPE_INBOX = "obsidian-inbox-triage-view";
 
@@ -78,25 +78,32 @@ export class InboxTriageView extends ItemView {
 
       const titleEl = row.createEl("a", { text: note.file.basename, cls: "obsidian-inbox-triage-title" });
       titleEl.addEventListener("click", () => {
-        this.app.workspace.getLeaf(false).openFile(note.file);
+        void this.app.workspace.getLeaf(false).openFile(note.file);
       });
 
       const buttons = row.createDiv({ cls: "obsidian-inbox-triage-buttons" });
       const saveBtn = buttons.createEl("button", { text: "保存" });
       const discardBtn = buttons.createEl("button", { text: "丢弃" });
 
-      saveBtn.addEventListener("click", () => this.handleSave(note, saveBtn, discardBtn));
-      discardBtn.addEventListener("click", () => this.handleDiscard(note, saveBtn, discardBtn));
+      saveBtn.addEventListener("click", () => void this.handleSave(note, saveBtn, discardBtn));
+      discardBtn.addEventListener("click", () => void this.handleDiscard(note, saveBtn, discardBtn));
     }
   }
 
-  // `note.file` is a real TFile at runtime; these adapters narrow it to the
-  // minimal ActionFile shape so actions.ts has no runtime dependency on `obsidian`.
+  // `note.file` is a real TFile at runtime; these adapters narrow it back from
+  // the minimal ActionFile shape so actions.ts has no runtime dependency on `obsidian`.
+  private asTFile(file: ActionFile): TFile {
+    if (!(file instanceof TFile)) {
+      throw new Error(`Expected a TFile: ${file.path}`);
+    }
+    return file;
+  }
+
   private fileManagerAdapter(): FileManagerLike {
     const app = this.app;
     return {
-      processFrontMatter: (file, fn) => app.fileManager.processFrontMatter(file as unknown as TFile, fn),
-      renameFile: (file, newPath) => app.fileManager.renameFile(file as unknown as TFile, newPath),
+      processFrontMatter: (file, fn) => app.fileManager.processFrontMatter(this.asTFile(file), fn),
+      renameFile: (file, newPath) => app.fileManager.renameFile(this.asTFile(file), newPath),
     };
   }
 
@@ -105,9 +112,11 @@ export class InboxTriageView extends ItemView {
     return {
       getAbstractFileByPath: (path) => app.vault.getAbstractFileByPath(path),
       createFolder: (path) => app.vault.createFolder(path),
-      trash: (file, system) => app.vault.trash(file as unknown as TFile, system),
-      read: (file) => app.vault.read(file as unknown as TFile),
-      modify: (file, content) => app.vault.modify(file as unknown as TFile, content),
+      // FileManager.trashFile() (rather than Vault.trash()) respects the user's
+      // configured file deletion preference (system trash vs. Obsidian's .trash).
+      trash: (file) => app.fileManager.trashFile(this.asTFile(file)),
+      read: (file) => app.vault.read(this.asTFile(file)),
+      modify: (file, content) => app.vault.modify(this.asTFile(file), content),
     };
   }
 

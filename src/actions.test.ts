@@ -180,7 +180,7 @@ describe("discardNote", () => {
 
     await discardNote(file, vault);
 
-    expect(vault.trash).toHaveBeenCalledWith(file, true);
+    expect(vault.trash).toHaveBeenCalledWith(file);
   });
 
   it("propagates trash errors", async () => {
