@@ -20,6 +20,49 @@ function normalizeTags(tags: unknown): string[] {
   return [];
 }
 
+function unquoteYamlScalar(value: string): string {
+  const trimmed = value.trim();
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
+
+function parseInlineArray(value: string): string[] | null {
+  const trimmed = value.trim();
+  if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) return null;
+  const inner = trimmed.slice(1, -1).trim();
+  if (!inner) return [];
+  return inner.split(",").map((item) => unquoteYamlScalar(item));
+}
+
+export function parseFrontmatterFromMarkdown(content: string): FrontmatterCacheLike | undefined {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!match) return undefined;
+
+  const frontmatter: FrontmatterCacheLike = {};
+  const lines = match[1].split(/\r?\n/);
+
+  for (const line of lines) {
+    const scalar = line.match(/^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$/);
+    if (!scalar) continue;
+
+    const [, key, rawValue] = scalar;
+    if (key !== "created" && key !== "status" && key !== "tags") continue;
+
+    if (key === "tags") {
+      frontmatter.tags = parseInlineArray(rawValue) ?? unquoteYamlScalar(rawValue);
+    } else {
+      frontmatter[key] = unquoteYamlScalar(rawValue);
+    }
+  }
+
+  return frontmatter;
+}
+
 function isInFolder(path: string, folder: string): boolean {
   const normalized = folder.trim().replace(/\/+$/, "");
   if (!normalized) return true;

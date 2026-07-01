@@ -1,6 +1,6 @@
 import { getAllTags, ItemView, Notice, TFile, WorkspaceLeaf } from "obsidian";
 import type ObsidianInboxPlugin from "./main";
-import { scanInboxNotes, type InboxNote } from "./scanner";
+import { parseFrontmatterFromMarkdown, scanInboxNotes, type FrontmatterCacheLike, type InboxNote } from "./scanner";
 import { saveNote, discardNote, type ActionFile, type FileManagerLike, type VaultLike } from "./actions";
 
 export const VIEW_TYPE_INBOX = "obsidian-inbox-triage-view";
@@ -30,7 +30,7 @@ export class InboxTriageView extends ItemView {
     this.registerEvent(this.app.vault.on("delete", () => this.scheduleRescan()));
     this.registerEvent(this.app.vault.on("rename", () => this.scheduleRescan()));
     this.registerEvent(this.app.metadataCache.on("changed", () => this.scheduleRescan()));
-    this.rescan();
+    void this.rescan();
   }
 
   async onClose(): Promise<void> {
@@ -43,20 +43,40 @@ export class InboxTriageView extends ItemView {
     if (this.refreshTimer !== null) {
       window.clearTimeout(this.refreshTimer);
     }
-    this.refreshTimer = window.setTimeout(() => this.rescan(), 200);
+    this.refreshTimer = window.setTimeout(() => void this.rescan(), 200);
   }
 
-  rescan(): void {
+  private async getFrontmatter(file: TFile): Promise<FrontmatterCacheLike | undefined> {
+    const cache = this.app.metadataCache.getFileCache(file);
+    const fromCache: FrontmatterCacheLike | undefined = cache
+      ? {
+          tags: getAllTags(cache) ?? [],
+          created: cache.frontmatter?.created,
+          status: cache.frontmatter?.status,
+        }
+      : undefined;
+
+    if (fromCache?.status || fromCache?.tags || fromCache?.created) {
+      return fromCache;
+    }
+
+    return parseFrontmatterFromMarkdown(await this.app.vault.cachedRead(file));
+  }
+
+  async rescan(): Promise<void> {
     const { inboxFolder, inboxTag } = this.plugin.settings;
+    const files = this.app.vault.getMarkdownFiles();
+    const frontmatterByPath = new Map<string, FrontmatterCacheLike | undefined>();
+
+    await Promise.all(
+      files.map(async (file) => {
+        frontmatterByPath.set(file.path, await this.getFrontmatter(file));
+      })
+    );
+
     this.notes = scanInboxNotes(
-      this.app.vault.getMarkdownFiles(),
-      (file) => {
-        const cache = this.app.metadataCache.getFileCache(file);
-        if (!cache) return undefined;
-        // getAllTags merges frontmatter tags with inline "#tag" tags found in the
-        // note body, so the inbox tag can be matched from either source.
-        return { tags: getAllTags(cache) ?? [], created: cache.frontmatter?.created, status: cache.frontmatter?.status };
-      },
+      files,
+      (file) => frontmatterByPath.get(file.path),
       inboxFolder,
       inboxTag
     );

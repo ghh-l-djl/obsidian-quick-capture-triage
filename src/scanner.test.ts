@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TFile } from "obsidian";
-import { scanInboxNotes } from "./scanner";
+import { parseFrontmatterFromMarkdown, scanInboxNotes } from "./scanner";
 
 function makeFile(path: string, ctime: number): TFile {
   return { path, stat: { ctime, mtime: ctime, size: 0 } } as unknown as TFile;
@@ -106,5 +106,39 @@ describe("scanInboxNotes", () => {
     );
     expect(result).toHaveLength(1);
     expect(result[0].createdAt).toBeNull();
+  });
+});
+
+describe("parseFrontmatterFromMarkdown", () => {
+  it("extracts status, created, and empty tags from generated inbox notes", () => {
+    const result = parseFrontmatterFromMarkdown(
+      [
+        "---",
+        'created: "2026-07-02 00:11:33"',
+        "source: human",
+        "status: inbox",
+        "publish_status: none",
+        "tags: []",
+        "sourceTags: []",
+        "---",
+        "",
+        "body",
+      ].join("\n")
+    );
+
+    expect(result).toEqual({
+      created: "2026-07-02 00:11:33",
+      status: "inbox",
+      tags: [],
+    });
+  });
+
+  it("extracts legacy inline inbox tags", () => {
+    const result = parseFrontmatterFromMarkdown("---\ncreated: old\ntags: [inbox]\n---\n\nbody");
+
+    expect(result).toEqual({
+      created: "old",
+      tags: ["inbox"],
+    });
   });
 });

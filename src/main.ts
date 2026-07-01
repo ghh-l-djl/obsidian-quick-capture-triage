@@ -32,7 +32,7 @@ export default class ObsidianInboxPlugin extends Plugin {
     await this.saveData(this.settings);
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE_INBOX)) {
       if (leaf.view instanceof InboxTriageView) {
-        leaf.view.rescan();
+        void leaf.view.rescan();
       }
     }
   }
