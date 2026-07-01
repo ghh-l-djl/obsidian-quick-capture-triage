@@ -25,15 +25,15 @@ npm test
 
 - `src/main.ts`: `Plugin` entry — registers the view, ribbon icon, command, and settings tab.
 - `src/view.ts`: `InboxTriageView` (`ItemView`) — sidebar list of untriaged inbox notes, with save/discard buttons.
-- `src/scanner.ts`: pure scan logic — finds notes matching `inboxFolder` + `inboxTag`. No Obsidian runtime dependency.
+- `src/scanner.ts`: pure scan logic — finds notes under `inboxFolder` with `status: inbox`, with `inboxTag` as a legacy fallback. No Obsidian runtime dependency.
 - `src/actions.ts`: pure save/discard logic against minimal `FileManagerLike`/`VaultLike` interfaces. No Obsidian runtime dependency.
 - `src/settings.ts`: `PluginSettings` type, `DEFAULT_SETTINGS`, and `InboxSettingTab`.
 
 ## Matching Rule
 
-A note is "untriaged" only if **both** are true: its path is under the configured `inboxFolder`, and its tags include the configured `inboxTag` — checked against both frontmatter `tags` and inline `#tag`s in the note body (merged via Obsidian's `getAllTags()` in `view.ts`, then compared in `scanner.ts` with the `#` stripped). Defaults (`inbox` / `inbox`) are meant to match `server/`'s `VAULT_INBOX_SUBDIR` default and the `tags: [inbox]` frontmatter it writes — keep these in sync manually if either default changes.
+A note is "untriaged" when its path is under the configured `inboxFolder` and its frontmatter has `status: inbox`. For old notes, `inboxTag` remains a compatibility fallback checked against both frontmatter `tags` and inline `#tag`s in the note body (merged via Obsidian's `getAllTags()` in `view.ts`, then compared in `scanner.ts` with the `#` stripped).
 
-`saveNote` (`actions.ts`) strips the inbox tag from both frontmatter `tags` and a standalone inline `#tag` in the body (via `stripInlineTag`, a word-boundary regex — it has no awareness of code fences, so a literal `#tag` inside a code block would also be stripped). This matters even under default settings, not just when `inboxFolder` is empty: without it, a note saved via an inline tag would keep matching `scanInboxNotes` on every subsequent scan until the tag is removed by hand.
+`saveNote` (`actions.ts`) changes frontmatter `status` to `active`, strips the legacy inbox tag from frontmatter `tags`, and strips a standalone inline `#tag` in the body (via `stripInlineTag`, a word-boundary regex — it has no awareness of code fences, so a literal `#tag` inside a code block would also be stripped).
 
 ## Out of Scope
 

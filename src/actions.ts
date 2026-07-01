@@ -39,6 +39,8 @@ export async function saveNote(
   organizedFolder: string
 ): Promise<void> {
   await fileManager.processFrontMatter(file, (frontmatter) => {
+    frontmatter.status = "active";
+
     if (Array.isArray(frontmatter.tags)) {
       frontmatter.tags = (frontmatter.tags as unknown[]).filter((tag) => tag !== inboxTag);
     }

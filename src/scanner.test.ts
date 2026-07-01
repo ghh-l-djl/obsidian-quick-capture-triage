@@ -19,17 +19,29 @@ describe("scanInboxNotes", () => {
     expect(result).toHaveLength(0);
   });
 
-  it("includes files that match both the folder and the tag", () => {
+  it("includes files that match the folder and status: inbox", () => {
     const file = makeFile("inbox/a.md", 1);
     const result = scanInboxNotes(
       [file],
-      () => ({ tags: ["inbox"], created: "2026-06-19T10:00:00.000Z" }),
+      () => ({ status: "inbox", tags: [], created: "2026-06-19T10:00:00.000Z" }),
       "inbox",
       "inbox"
     );
     expect(result).toHaveLength(1);
     expect(result[0].file).toBe(file);
     expect(result[0].createdAt).toBe("2026-06-19T10:00:00.000Z");
+  });
+
+  it("keeps legacy inbox tags as a fallback match", () => {
+    const file = makeFile("inbox/a.md", 1);
+    const result = scanInboxNotes([file], () => ({ tags: ["inbox"] }), "inbox", "inbox");
+    expect(result).toHaveLength(1);
+  });
+
+  it("excludes active files even when they are in the inbox folder", () => {
+    const file = makeFile("inbox/a.md", 1);
+    const result = scanInboxNotes([file], () => ({ status: "active", tags: [] }), "inbox", "inbox");
+    expect(result).toHaveLength(0);
   });
 
   it("skips files whose frontmatter cache lookup throws", () => {

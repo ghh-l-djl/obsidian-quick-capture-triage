@@ -8,7 +8,11 @@ function makeFile(path: string, name: string): ActionFile {
 describe("saveNote", () => {
   it("removes only the inbox tag and renames into the organized folder", async () => {
     const file = makeFile("inbox/2026-06-19-1000.md", "2026-06-19-1000.md");
-    const capturedFrontmatter: Record<string, unknown> = { tags: ["inbox", "keep-me"], created: "2026-06-19" };
+    const capturedFrontmatter: Record<string, unknown> = {
+      status: "inbox",
+      tags: ["inbox", "keep-me"],
+      created: "2026-06-19",
+    };
     const fileManager: FileManagerLike = {
       processFrontMatter: vi.fn(async (_file, fn) => {
         fn(capturedFrontmatter);
@@ -25,6 +29,7 @@ describe("saveNote", () => {
 
     await saveNote(file, fileManager, vault, "inbox", "已整理");
 
+    expect(capturedFrontmatter.status).toBe("active");
     expect(capturedFrontmatter.tags).toEqual(["keep-me"]);
     expect(capturedFrontmatter.created).toBe("2026-06-19");
     expect(vault.createFolder).toHaveBeenCalledWith("已整理");

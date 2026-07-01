@@ -23,11 +23,11 @@ export class InboxSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     const intro = containerEl.createDiv({ cls: "setting-item-description quick-capture-triage-intro" });
-    intro.createDiv({ text: "侧边栏会列出「收件箱文件夹」下、带有「收件箱标签」的笔记，对每条笔记可以：" });
+    intro.createDiv({ text: "侧边栏会列出「收件箱文件夹」下、status 为 inbox 的笔记，对每条笔记可以：" });
     const actions = intro.createEl("ul", { cls: "quick-capture-triage-list" });
     const saveItem = actions.createEl("li");
     saveItem.createEl("strong", { text: "保存" });
-    saveItem.appendText(" — 移除收件箱标签，并把笔记移动到「已整理文件夹」");
+    saveItem.appendText(" — 将 status 改为 active，并把笔记移动到「已整理文件夹」");
     const discardItem = actions.createEl("li");
     discardItem.createEl("strong", { text: "丢弃" });
     discardItem.appendText(" — 把笔记移入 Obsidian 回收站");
@@ -46,10 +46,10 @@ export class InboxSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("收件箱标签")
+      .setName("旧版收件箱标签")
       .setDesc(
-        "判定笔记为「未处理」的标签名，同时匹配 frontmatter 标签和正文里的 #标签。" +
-          "留空表示不要求标签——收件箱文件夹下的所有笔记都会被当作未处理。"
+        "兼容旧笔记用：除 status: inbox 外，也会匹配这个 frontmatter 标签或正文 #标签。" +
+          "保存时会移除该标签。留空表示不做旧标签匹配。"
       )
       .addText((text) =>
         text.setValue(this.plugin.settings.inboxTag).onChange(async (value) => {

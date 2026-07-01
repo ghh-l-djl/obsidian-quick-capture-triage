@@ -29,13 +29,13 @@ npm test
 
 - `src/main.ts`: `Plugin` entry — registers the view, ribbon icon, command, and settings tab.
 - `src/view.ts`: `InboxTriageView` (`ItemView`) — sidebar list of untriaged inbox notes, with save/discard buttons.
-- `src/scanner.ts`: pure scan logic — finds notes matching `inboxFolder` + `inboxTag`. No Obsidian runtime dependency.
+- `src/scanner.ts`: pure scan logic — finds notes under `inboxFolder` with `status: inbox`, with `inboxTag` as a legacy fallback. No Obsidian runtime dependency.
 - `src/actions.ts`: pure save/discard logic against minimal `FileManagerLike`/`VaultLike` interfaces. No Obsidian runtime dependency.
 - `src/settings.ts`: `PluginSettings` type, `DEFAULT_SETTINGS`, and `InboxSettingTab`.
 
 ## Matching Rule
 
-A note is "untriaged" only if **both** are true: its path is under the configured `inboxFolder`, and its frontmatter `tags` includes the configured `inboxTag`. Defaults (`inbox` / `inbox`) are meant to match `server/`'s `VAULT_INBOX_SUBDIR` default and the `tags: [inbox]` frontmatter it writes — keep these in sync manually if either default changes.
+A note is "untriaged" when its path is under the configured `inboxFolder` and its frontmatter has `status: inbox`. For old notes, `inboxTag` remains a compatibility fallback checked against both frontmatter `tags` and inline `#tag`s in the note body. Saving a note changes `status` to `active` and strips the legacy inbox tag when present.
 
 ## Out of Scope
 

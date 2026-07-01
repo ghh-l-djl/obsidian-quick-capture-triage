@@ -3,6 +3,7 @@ import type { TFile } from "obsidian";
 export interface FrontmatterCacheLike {
   tags?: unknown;
   created?: unknown;
+  status?: unknown;
   [key: string]: unknown;
 }
 
@@ -11,8 +12,8 @@ export interface InboxNote {
   createdAt: string | null;
 }
 
-// Strips a leading "#" so frontmatter tags ("inbox") and inline body tags
-// ("#inbox", as returned by Obsidian's getAllTags()) compare equal.
+// Strips a leading "#" so legacy frontmatter tags ("inbox") and inline body
+// tags ("#inbox", as returned by Obsidian's getAllTags()) compare equal.
 function normalizeTags(tags: unknown): string[] {
   if (Array.isArray(tags)) return tags.map((tag) => String(tag).replace(/^#/, ""));
   if (typeof tags === "string") return tags.split(",").map((tag) => tag.trim().replace(/^#/, ""));
@@ -46,8 +47,10 @@ export function scanInboxNotes(
     }
 
     if (requireTag) {
-      if (!frontmatter) continue;
-      if (!normalizeTags(frontmatter.tags).includes(inboxTag)) continue;
+      const hasInboxStatus = frontmatter?.status === "inbox";
+      const hasLegacyInboxTag = frontmatter ? normalizeTags(frontmatter.tags).includes(inboxTag) : false;
+
+      if (!hasInboxStatus && !hasLegacyInboxTag) continue;
     }
 
     const createdAt = typeof frontmatter?.created === "string" ? frontmatter.created : null;

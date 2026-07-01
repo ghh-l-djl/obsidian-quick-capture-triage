@@ -55,7 +55,7 @@ export class InboxTriageView extends ItemView {
         if (!cache) return undefined;
         // getAllTags merges frontmatter tags with inline "#tag" tags found in the
         // note body, so the inbox tag can be matched from either source.
-        return { tags: getAllTags(cache) ?? [], created: cache.frontmatter?.created };
+        return { tags: getAllTags(cache) ?? [], created: cache.frontmatter?.created, status: cache.frontmatter?.status };
       },
       inboxFolder,
       inboxTag
