@@ -1,7 +1,7 @@
 {
   "id": "quick-capture-triage",
   "name": "Quick Capture Triage",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "minAppVersion": "1.7.2",
   "description": "Clear out notes captured by your self-hosted quick-capture pipeline: keep or discard each pending inbox note.",
   "author": "ghh-l-djl",
